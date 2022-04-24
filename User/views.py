@@ -8,9 +8,10 @@ from django.core.serializers import serialize
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from fileuploader.settings import SECRET_KEY as seckey
+from fileuploader.settings import SECRET_KEY
 from .models import Profile
 from .utils import LazyEncoder
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
 
 
 def UserProfiles(request):
@@ -36,14 +37,17 @@ def LoginPage(request):
             return HttpResponse("User doesn't exist")
 
         user = authenticate(request, username=username, password=password)
-        payload = {
-            'id': user.id,
-            'email': user.email,
-            'iat': datetime.datetime.utcnow(),
-            'exp': datetime.datetime.utcnow()+datetime.timedelta(minutes=60)
-        }
-        token = jwt.encode(payload, seckey, algorithm='HS256').decode('utf-8')
-        return HttpResponse(token)
+        if user:
+            payload = {
+                'id': user.id,
+                'email': user.email,
+                'iat': datetime.datetime.utcnow(),
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=60)
+            }
+            token = jwt.encode(payload, SECRET_KEY, algorithm='HS256').decode('utf-8')
+            return JsonResponse(token)
+        else:
+            return JsonResponse({'Message': "User name or password not found"}, safe=False)
 
 
 @csrf_exempt
@@ -74,3 +78,35 @@ def Search(request):
         return HttpResponse(profiles)
     else:
         return HttpResponse('Input data')
+
+
+@csrf_exempt
+def ResetPassword(request):
+    if request.method == 'POST':
+        data = json.loads(request.body.decode('utf-8'))
+        email = data['email']
+        user = User.objects.filter(email=email).first()
+        if user:
+            generator = PasswordResetTokenGenerator()
+            token = generator.make_token(user)
+            return JsonResponse(token, safe=False)
+        else:
+            return JsonResponse({'Message': "User not found"}, safe=False)
+
+
+@csrf_exempt
+def ResetPasswordConfirm(request):
+    if request.method == 'POST':
+        token = request.headers['token']
+        data = json.loads(request.body.decode('utf-8'))
+        user = User.objects.filter(email=data['email']).first()
+        generator = PasswordResetTokenGenerator()
+        if generator.check_token(user=user, token=token):
+            user.set_password(data['password'])
+            if user.check_password(data['password']):
+                user.save()
+                return JsonResponse({'message': 'Password successfully reset'}, safe=False)
+            else:
+                return JsonResponse({'message': 'Password not reset'}, safe=False)
+        else:
+            return JsonResponse({'message': "User doesn't exist"}, safe=False)
