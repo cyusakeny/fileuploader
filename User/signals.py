@@ -13,18 +13,17 @@ def CreateProfile(sender, instance, created, **kwargs):
             user=user,
             name=user.last_name,
             email=user.email,
-            phone='0000',
             username=user.username
         )
-        subject = 'Welcome to SHOWFILES'
-        message = 'You have successfully created account'
-        send_mail(
-            subject,
-            message,
-            settings.EMAIL_USER,
-            profile.email,
-            fail_silently=False
-        )
+        # subject = 'Welcome to SHOWFILES'
+        # message = 'You have successfully created account'
+        # send_mail(
+        #     subject,
+        #     message,
+        #     settings.EMAIL_USER,
+        #     [profile.email],
+        #     fail_silently=False
+        # )
 
 
 def DeleteUser(sender, instance, **kwargs):

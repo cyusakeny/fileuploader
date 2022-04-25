@@ -45,7 +45,7 @@ def LoginPage(request):
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=60)
             }
             token = jwt.encode(payload, SECRET_KEY, algorithm='HS256').decode('utf-8')
-            return JsonResponse(token)
+            return JsonResponse(token, safe=False, status=200)
         else:
             return JsonResponse({'Message': "User name or password not found"}, safe=False)
 

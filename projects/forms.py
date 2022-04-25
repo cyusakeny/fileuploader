@@ -5,7 +5,7 @@ from .models import File
 class FileForm(ModelForm):
     class Meta:
         model = File
-        fields = ['name', 'size']
+        fields = ['name', 'size', 'extension']
 
 
 class RenameForm(ModelForm):
