@@ -13,7 +13,7 @@ class File(models.Model):
     shared = models.ManyToManyField('SharedFile', blank=True)
     owner = models.ForeignKey(Profile, on_delete=models.CASCADE)
     extension = models.CharField(max_length=200)
-    id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False, unique=True)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
 
     def __str__(self):
         return self.name

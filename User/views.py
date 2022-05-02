@@ -7,27 +7,36 @@ from django.contrib.auth.models import User
 from django.core.serializers import serialize
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
-from django.views.decorators.csrf import csrf_exempt
+from rest_framework.generics import CreateAPIView, ListAPIView, UpdateAPIView
 from fileuploader.settings import SECRET_KEY
+from .UserSeriliazer import ProfileSerializer, UserSignupSerializer, \
+    ResetPasswordEmailSerializer, ResetPasswordSerializer
 from .models import Profile
 from .utils import LazyEncoder
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 
 
-def UserProfiles(request):
-    profiles = Profile.objects.all()
-    return HttpResponse(profiles)
+class UserProfiles(ListAPIView):
+    serializer_class = Profile
+
+    def get(self, request, *args, **kwargs):
+        profiles = Profile.objects.all()
+        return HttpResponse(profiles)
 
 
-def UserProfile(request, pk):
-    profile = Profile.objects.filter(id=pk)
-    data = serialize('json', profile, cls=LazyEncoder)
-    return JsonResponse(data, safe=False)
+class UserProfile(ListAPIView):
+    serializer_class = Profile
+
+    def get_object(self):
+        profile = Profile.objects.filter(id=self.kwargs['pk'])
+        data = serialize('json', profile, cls=LazyEncoder)
+        return JsonResponse(data, safe=False, status=201)
 
 
-@csrf_exempt
-def LoginPage(request):
-    if request.method == 'POST':
+class LoginPage(CreateAPIView):
+    serializer_class = ProfileSerializer
+
+    def post(self, request, *args, **kwargs):
         data = json.loads(request.body.decode('utf-8'))
         username = data['username']
         password = data['password']
@@ -50,9 +59,10 @@ def LoginPage(request):
             return JsonResponse({'Message': "User name or password not found"}, safe=False)
 
 
-@csrf_exempt
-def SignUp(request):
-    if request.method == 'POST':
+class SignUp(CreateAPIView):
+    serializer_class = UserSignupSerializer
+
+    def post(self, request, *args, **kwargs):
         data = json.loads(request.body.decode('utf-8'))
         username = data['username']
         password = data['password']
@@ -80,9 +90,10 @@ def Search(request):
         return HttpResponse('Input data')
 
 
-@csrf_exempt
-def ResetPassword(request):
-    if request.method == 'POST':
+class ResetPassword(CreateAPIView):
+    serializer_class = ResetPasswordSerializer
+
+    def post(self, request, *args, **kwargs):
         data = json.loads(request.body.decode('utf-8'))
         email = data['email']
         user = User.objects.filter(email=email).first()
@@ -94,9 +105,10 @@ def ResetPassword(request):
             return JsonResponse({'Message': "User not found"}, safe=False)
 
 
-@csrf_exempt
-def ResetPasswordConfirm(request):
-    if request.method == 'POST':
+class ResetPasswordConfirm(UpdateAPIView):
+    serializer_class = ResetPasswordSerializer
+
+    def put(self, request, *args, **kwargs):
         token = request.headers['token']
         data = json.loads(request.body.decode('utf-8'))
         user = User.objects.filter(email=data['email']).first()
